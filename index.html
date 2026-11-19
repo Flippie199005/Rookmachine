@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>Rookmachines</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rookmachines">
+<style>
+  @font-face { font-family: "Bebas Neue"; src: url("fonts/bebas-neue-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Oswald"; src: url("fonts/oswald-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Oswald"; src: url("fonts/oswald-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+</style>
+<style>
+  :root {
+    --yellow: #FFBE03; --black: #000000; --white: #FFFFFF;
+    --red: #E2231A;
+    --panel: #111111; --line: #2B2B2B; --muted: #9B9B9B; --dim: #5E5E5E;
+    --head: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+    --body: "Oswald", "Arial Narrow", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--black); color: var(--white); font-family: var(--body); font-weight: 400; }
+  body { max-width: 560px; margin: 0 auto; padding: 0 16px calc(28px + env(safe-area-inset-bottom)); }
+
+  .stripes { height: 48px; margin: 0 -16px; padding-top: env(safe-area-inset-top);
+    background: repeating-linear-gradient(to bottom, var(--yellow) 0 8px, var(--black) 8px 16px); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 20px; }
+  .crest { width: 58px; height: auto; flex: none; margin: 20px 0 20px 4px; }
+  h1 { font-family: var(--head); font-weight: 400; font-size: clamp(1.7rem, 8vw, 2.6rem); line-height: .9; margin: 0; letter-spacing: .01em; }
+  h1 span { color: var(--yellow); display: block; }
+  h2 { font-family: var(--head); font-weight: 400; font-size: 1.5rem; margin: 0; letter-spacing: .02em; }
+  .hbtns { display: flex; flex-direction: column; gap: 6px; flex: none; }
+  .hbtns .btn { white-space: nowrap; font-size: 1rem; padding: 8px 10px; }
+  .brand { min-width: 0; }
+
+  button { font-family: var(--head); font-size: 1.15rem; letter-spacing: .04em; cursor: pointer; }
+  .btn { background: var(--black); color: var(--white); border: 1.5px solid var(--white); border-radius: 0; padding: 9px 14px; }
+  .btn.y { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
+  .btn.ghost { border-color: var(--line); color: var(--muted); }
+  .btn.red { border-color: var(--red); color: var(--white); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+
+  section { padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .sub { color: var(--muted); font-size: .9rem; }
+  .row { display: flex; gap: 10px; margin-top: 10px; }
+  .row > * { flex: 1; }
+  .row .btn { white-space: nowrap; padding-left: 8px; padding-right: 8px; }
+
+  /* ---------- rookknop ---------- */
+  .fog { position: relative; width: 100%; aspect-ratio: 1.55 / 1; border: 3px solid var(--dim); background: var(--black);
+    color: var(--white); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; padding: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .fog .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--yellow); opacity: .22; transition: height .6s; }
+  .fog .lbl { position: relative; font-family: var(--head); font-size: 4.2rem; line-height: .9; letter-spacing: .02em; }
+  .fog .hint { position: relative; font-family: var(--body); font-size: .95rem; margin-top: 8px; letter-spacing: .02em; }
+  .fog .tag { position: relative; font-family: var(--head); font-size: 1.15rem; padding: 2px 10px; margin-top: 10px; }
+  .fog.s-off  { border-color: var(--line); color: var(--dim); }
+  .fog.s-heat { border-color: var(--yellow); border-style: dashed; color: var(--yellow); }
+  .fog.s-heat .hint { color: var(--white); }
+  .fog.s-ready { background: var(--yellow); border-color: var(--yellow); color: var(--black); }
+  .fog.s-ready .tag { background: var(--black); color: var(--yellow); }
+  .fog.s-fog { border-color: var(--yellow); color: var(--black);
+    background: repeating-linear-gradient(to bottom, var(--yellow) 0 14px, var(--black) 14px 28px); }
+  .fog.s-fog .lbl, .fog.s-fog .hint { background: var(--black); color: var(--yellow); padding: 4px 14px; }
+  .fog.s-pause { border-color: var(--white); color: var(--white); }
+  .fog.s-fault { border-color: var(--red); color: var(--white); }
+  .fog.s-fault .tag { background: var(--red); }
+  @media (prefers-reduced-motion: no-preference) {
+    .fog.s-ready { animation: breathe 2.4s ease-in-out infinite; }
+    .fog.s-fog { animation: run .5s linear infinite; }
+  }
+  @keyframes breathe { 0%,100% { box-shadow: 0 0 0 0 rgba(255,190,3,0); } 50% { box-shadow: 0 0 0 6px rgba(255,190,3,.25); } }
+  @keyframes run { from { background-position: 0 0; } to { background-position: 0 28px; } }
+
+  /* ---------- machines ---------- */
+  .empty { color: var(--muted); padding: 10px 0 0; font-size: .95rem; line-height: 1.5; }
+  .card { border: 1.5px solid var(--line); margin-top: 12px; background: var(--panel); }
+  .card.sel { border-color: var(--yellow); }
+  .ctop { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .chk { width: 26px; height: 26px; border: 2px solid var(--dim); flex: none; display: grid; place-items: center; background: var(--black); padding: 0; }
+  .card.sel .chk { background: var(--yellow); border-color: var(--yellow); }
+  .chk svg { width: 16px; height: 16px; opacity: 0; }
+  .card.sel .chk svg { opacity: 1; }
+  .cname { flex: 1; min-width: 0; }
+  .cname b { font-family: var(--head); font-weight: 400; font-size: 1.45rem; letter-spacing: .02em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cname small { color: var(--muted); font-size: .8rem; }
+  .ctemp { text-align: right; font-family: var(--head); font-size: 2.3rem; line-height: .9; font-variant-numeric: tabular-nums; }
+  .ctemp small { display: block; font-family: var(--body); font-size: .75rem; color: var(--muted); }
+  .cbar { height: 6px; background: var(--line); margin: 0 14px; }
+  .cbar div { height: 100%; width: 0; background: var(--white); transition: width .4s, background .4s; }
+  .cstate { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 12px; }
+  .pill { font-family: var(--head); font-size: 1rem; letter-spacing: .04em; padding: 2px 8px; border: 1px solid var(--dim); color: var(--muted); }
+  .pill.on  { background: var(--yellow); border-color: var(--yellow); color: var(--black); }
+  .pill.hot { border-color: var(--yellow); color: var(--yellow); }
+  .pill.bad { background: var(--red); border-color: var(--red); color: var(--white); }
+  .csp { display: flex; align-items: center; gap: 10px; padding: 0 14px 12px; }
+  .csplbl { flex: 1; color: var(--muted); font-size: .9rem; }
+  .spl { font-family: var(--head); font-size: 1.6rem; min-width: 74px; text-align: center; font-variant-numeric: tabular-nums; }
+  .spb { width: 44px; height: 40px; background: var(--black); color: var(--yellow); border: 1.5px solid var(--yellow); font-size: 1.6rem; line-height: 1; padding: 0; }
+  .spb:disabled { opacity: .3; cursor: not-allowed; }
+  details { border-top: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 10px 14px; color: var(--muted); font-size: .9rem; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: " +"; }
+  details[open] summary::after { content: " −"; }
+  .dbody { padding: 0 14px 14px; }
+  canvas { width: 100%; height: 90px; display: block; background: var(--black); }
+  label { display: block; color: var(--muted); font-size: .85rem; margin: 12px 0 6px; }
+  input[type=range] { width: 100%; accent-color: var(--yellow); }
+  input[type=number], input[type=text], select { width: 100%; background: var(--black); color: var(--white); border: 1.5px solid var(--line);
+    border-radius: 0; padding: 10px; font-family: var(--body); font-size: 1rem; }
+  .between { display: flex; justify-content: space-between; align-items: baseline; }
+  .note { color: var(--muted); font-size: .82rem; line-height: 1.5; margin-top: 10px; }
+  .unsupported { display: none; border: 1.5px solid var(--yellow); padding: 12px 14px; margin-top: 16px; font-size: .9rem; line-height: 1.5; }
+  .unsupported b { font-family: var(--head); font-weight: 400; font-size: 1.2rem; color: var(--yellow); letter-spacing: .03em; display: block; }
+  footer { color: var(--dim); font-size: .8rem; padding-top: 16px; text-align: left; }
+</style>
+</head>
+<body>
+
+<div class="stripes" aria-hidden="true"></div>
+
+<header>
+  <div class="brand">
+    <svg class="crest" role="img" aria-label="VVV-Venlo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1824.27 2000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #121009;
+      }
+
+      .cls-2 {
+        fill: #fff;
+      }
+
+      .cls-3 {
+        fill: #ffba00;
+      }
+    </style>
+  </defs>
+  <path class="cls-3" d="M1811.05,0H13.19c-141.3,1336.12,898.95,2000,898.95,2000,0,0,1040.33-663.88,898.91-2000Z"/>
+  <path d="M959.42,375.51h276.48v751.88c123.04-266.33,187.11-458.56,225.85-751.88h298.4c-3.35,258.3-77.49,515.86-202.26,778.93h-598.48"/>
+  <path d="M864.97,375.51h-276.49v751.88c-123.06-266.33-187.11-458.52-225.87-751.88H64.26c3.35,258.3,77.49,515.86,202.26,778.93h598.45"/>
+  <rect x="709.11" y="202.78" width="45.73" height="44.09"/>
+  <path d="M1660.76,65.69c30.01-.49,58.58,12.85,77.49,36.16,19.64,25.72,29.72,57.47,28.5,89.81,1.51,33.62-9.2,66.65-30.14,92.99-33.52,41.76-94.54,48.43-136.3,14.91-5.5-4.41-10.5-9.41-14.91-14.91-20.94-26.34-31.65-59.37-30.14-92.99-1.19-32.35,8.92-64.1,28.59-89.81,18.88-23.35,47.47-36.69,77.49-36.16M1661.34,259.43c12.5-.83,24-7.13,31.43-17.22,10.33-12.48,9.65-31.52,9.65-50.46,1.98-16.88-1.39-33.96-9.65-48.82-15.45-17.36-42.05-18.9-59.41-3.45-1.22,1.08-2.37,2.23-3.45,3.45-8.28,14.85-11.63,31.94-9.56,48.82,0,18.94-.77,37.98,9.56,50.46,7.48,10.04,18.95,16.32,31.43,17.22"/>
+  <path d="M123.06,316.19h77.16l64.53-244.2h-69.28l-33.07,146.56-33.14-146.56H58.4l64.66,244.2Z"/>
+  <path d="M335.66,316.19h74.01l67.77-244.2h-70.82l-33.07,146.56-33.14-146.56h-69.32l64.58,244.2Z"/>
+  <path class="cls-1" d="M546.79,316.19h74.14l67.68-244.2h-69.31l-34.7,146.56-36.18-146.56h-66.22l64.58,244.2Z"/>
+  <path d="M843,316.19h77.24l64.58-244.2h-69.31l-33.07,146.56-36.28-146.56h-67.74l64.58,244.2Z"/>
+  <path d="M995.84,316.19h171.79v-67.77h-108.75v-28.33h91.42v-61.48h-91.42v-23.64h108.75v-62.98h-171.79v244.2Z"/>
+  <path d="M1188.12,316.19h63.02v-124.42l61.4,124.42h61.48V71.99h-61.48v118.12l-61.4-118.12h-63.02v244.2Z"/>
+  <path d="M1397.62,316.19h157.58v-69.32h-92.87V71.99h-64.71v244.2Z"/>
+  <path class="cls-2" d="M1164.09,717.44c0-139.19-112.84-252.03-252.03-252.03-139.19,0-252.03,112.84-252.03,252.03s112.84,252.03,252.03,252.03,252.03-112.84,252.03-252.03h0"/>
+  <path d="M696.48,699.19l-1.73,86.02,45.46,75.87,38.83-40.47-30.4-111.26-52.17-10.16Z"/>
+  <path d="M839.73,495.2l-77.56,40.49-40.49,77.56,55.62,16.76,79.22-82.57-16.79-52.24Z"/>
+  <path d="M1127.93,699.19l1.73,86.02-45.55,75.87-38.75-40.47,30.4-111.24,52.17-10.17Z"/>
+  <path d="M984.66,495.2l77.59,40.49,40.47,77.58-55.64,16.75-79.3-82.57,16.88-52.24Z"/>
+  <path d="M956.13,638.57h-87.81l-25.24,94.32,69.06,48.9,69.15-48.9-25.16-94.32Z"/>
+  <path d="M912.14,867.78l-84.17,23.6,26.95,47.19h114.64l26.95-47.19-84.37-23.6Z"/>
+  <path d="M1175.21,1211.69c-113.83,155-135.71,172.99-263.06,298.53-127.26-125.54-149.13-143.46-262.98-298.53h-352.34c147.16,282.52,416.84,578.21,615.28,716.32,198.05-137.77,468.25-433.8,615.4-716.32h-352.31Z"/>
+  <path d="M546.79,316.19h74.14l67.68-244.2h-69.31l-34.7,146.56-36.18-146.56h-66.22l64.58,244.2Z"/>
+</svg>
+    <h1>Rook<span>machines</span></h1>
+  </div>
+  <div class="hbtns">
+    <button class="btn y" id="addBle">+ Machine</button>
+    <button class="btn ghost" id="addSim">+ Simulatie</button>
+  </div>
+</header>
+
+<div class="unsupported" id="unsupported">
+  <b>Geen Bluetooth hier</b>
+  Android: open deze pagina in Chrome, met Bluetooth en locatie aan. iPhone: open hem in de gratis app Bluefy (Safari kan geen Bluetooth). Simulaties werken overal.
+</div>
+
+<section>
+  <button class="fog s-off" id="fogBtn" disabled>
+    <div class="fill" id="fogFill"></div>
+    <div class="lbl" id="fogLbl">Geen machine</div>
+    <div class="hint" id="fogHint">Koppel een machine of start een simulatie</div>
+  </button>
+  <div class="row">
+    <button class="btn" id="burst3" disabled>Stoot 3 s</button>
+    <button class="btn" id="burst6" disabled>Stoot 6 s</button>
+    <button class="btn red" id="stopAll" disabled>Stop alles</button>
+  </div>
+</section>
+
+<section>
+  <div class="between"><h2>Machines</h2><span class="sub" id="selInfo"></span></div>
+  <div id="machines"></div>
+  <div class="empty" id="emptyMsg">Nog niets gekoppeld. Druk op <b>+ Machine</b> om een rookmachine te zoeken, of op <b>+ Simulatie</b> om de app te proberen.</div>
+</section>
+
+<section>
+  <h2>Timer</h2>
+  <div class="sub">Geldt voor de aangevinkte machines.</div>
+  <div class="row">
+    <div><label for="tmInt">Elke (sec)</label><input type="number" id="tmInt" min="5" max="3600" value="60"></div>
+    <div><label for="tmDur">Rook (sec)</label><input type="number" id="tmDur" min="1" max="20" value="5"></div>
+  </div>
+  <div class="row">
+    <button class="btn y" id="tmStart" disabled>Timer start</button>
+    <button class="btn" id="tmStop" disabled>Timer stop</button>
+  </div>
+</section>
+
+
+<section id="simSection" style="display:none">
+  <h2>Simulatie</h2>
+  <label for="simSpeed">Snelheid</label>
+  <select id="simSpeed"><option value="1">1× (echte tijd)</option><option value="5">5×</option><option value="20" selected>20×</option><option value="60">60×</option></select>
+  <div class="note">Model op basis van de metingen aan de FX 1700: opwarmen ca. 30 °C per minuut, ca. 7 °C doorschieten, roken koelt het blok af. Zelfde regels als de ESP32-code.</div>
+</section>
+
+<footer>Rookmachine-bediening · ESP32 via Bluetooth LE · versie 1.0</footer>
+
+<script>
+/* =====================================================================
+   Instellingen — gelijk aan rookmachine_esp32.ino
+   ===================================================================== */
+const NUS_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_RX      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_TX      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+const CFG = { SP_MIN:150, SP_MAX:300, HYST:4, OVERSHOOT:6, READY_ON:10, READY_OFF:30, TEMP_ABS_MAX:330,
+              FOG_KEEPALIVE_MS:800, FOG_MAX_S:20, FOG_COOLDOWN_S:8, HEAT_CHECK_S:180, HEAT_CHECK_RISE:8 };
+const AMBIENT = 19;
+const $ = id => document.getElementById(id);
+const enc = new TextEncoder(), dec = new TextDecoder();
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+
+/* =====================================================================
+   Simulatie van één machine
+   ===================================================================== */
+class Sim {
+  constructor() { this.reset(); }
+  reset() {
+    this.simT = 0; this.block = AMBIENT + Math.random() * 2; this.q = 0;
+    this.tcLoose = false; this.elDead = false; this.tankEmpty = false;
+    this.sp = this.sp || 230; this.en = true; this.heat = false; this.ready = false; this.pump = false; this.fault = '';
+    this.fogReq = false; this.lastFogReal = 0; this.fogStart = 0; this.cooldownUntil = 0;
+    this.tmI = 0; this.tmD = 0; this.tmNext = 0; this.tmFogUntil = 0; this.hcStart = 0; this.hcTemp = AMBIENT;
+  }
+  get temp() { return this.tcLoose ? NaN : this.block; }
+  command(cmd) {
+    const now = this.simT;
+    if (cmd === 'F') { if (!this.fogReq) this.fogStart = now; this.fogReq = true; this.lastFogReal = performance.now(); }
+    else if (cmd === 'X') this.fogReq = false;
+    else if (cmd === 'S') { this.fogReq = false; this.tmI = 0; this.tmFogUntil = 0; }
+    else if (cmd.startsWith('SP:')) { const v = parseFloat(cmd.slice(3)); if (v >= CFG.SP_MIN && v <= CFG.SP_MAX) this.sp = v; }
+    else if (cmd.startsWith('TM:')) {
+      const [a, b] = cmd.slice(3).split(',').map(x => parseInt(x) || 0);
+      if (!a || !b) { this.tmI = 0; this.tmFogUntil = 0; }
+      else { this.tmI = Math.min(3600, Math.max(5, a)); this.tmD = Math.min(CFG.FOG_MAX_S, Math.max(1, b)); this.tmNext = now; }
+    }
+    else if (cmd === 'H1') this.en = true;
+    else if (cmd === 'H0') { this.en = false; this.fogReq = false; }
+    else if (cmd === 'R') this.fault = '';
+  }
+  setFault(f) { this.fault = f; this.heat = false; this.pump = false; this.ready = false; this.fogReq = false; this.tmI = 0; }
+  setHeater(on) { if (on && !this.heat) { this.hcStart = this.simT; this.hcTemp = this.temp; } this.heat = on; }
+  physics(dt) {
+    const P = (this.heat && !this.elDead) ? 0.62 : 0, TAU = 14;
+    this.q += (P - this.q / TAU) * dt;
+    const loss = 0.0007 * (this.block - AMBIENT);
+    const fogCool = this.pump ? 1.1 : 0;
+    this.block = Math.max(AMBIENT, this.block + (this.q / TAU - loss - fogCool) * dt);
+  }
+  control() {
+    const now = this.simT, t = this.temp;
+    if (isNaN(t)) this.setFault('thermokoppel los');
+    else if (t > CFG.TEMP_ABS_MAX) this.setFault('te heet');
+    if (this.fault) return;
+    const sp = this.sp;
+    if (!this.en) this.setHeater(false);
+    else if (t >= sp - CFG.OVERSHOOT) this.setHeater(false);
+    else if (t <= sp - CFG.OVERSHOOT - CFG.HYST) this.setHeater(true);
+    if (this.heat && now - this.hcStart > CFG.HEAT_CHECK_S) {
+      if (t - this.hcTemp < CFG.HEAT_CHECK_RISE && t < sp - CFG.OVERSHOOT - CFG.HYST - 10) { this.setFault('temperatuur stijgt niet'); return; }
+      this.hcStart = now; this.hcTemp = t;
+    }
+    if (!this.ready && t >= sp - CFG.READY_ON) this.ready = true;
+    if (this.ready && t < sp - CFG.READY_OFF) this.ready = false;
+    if (!this.en) this.ready = false;
+    if (this.fogReq && performance.now() - this.lastFogReal > CFG.FOG_KEEPALIVE_MS) this.fogReq = false;
+    let timerFog = false;
+    if (this.tmI > 0) {
+      if (now >= this.tmNext) { this.tmNext = now + this.tmI; if (this.ready && !this.tankEmpty) this.tmFogUntil = now + this.tmD; }
+      timerFog = this.tmFogUntil > now;
+    }
+    const want = this.fogReq || timerFog;
+    const allowed = this.ready && !this.tankEmpty && !(this.cooldownUntil > now);
+    if (want && allowed) {
+      if (!this.pump) this.fogStart = now;
+      if (now - this.fogStart > CFG.FOG_MAX_S) { this.pump = false; this.fogReq = false; this.tmFogUntil = 0; this.cooldownUntil = now + CFG.FOG_COOLDOWN_S; }
+      else this.pump = true;
+    } else this.pump = false;
+  }
+  advance(sec) { let n = Math.round(sec / 0.1); while (n-- > 0) { this.simT += 0.1; this.physics(0.1); this.control(); } }
+  status() {
+    const t = this.temp;
+    return { t: isNaN(t) ? -1 : Math.round(t * 10) / 10, sp: this.sp, ready: +this.ready, heat: +this.heat, pump: +this.pump,
+             tank: +!this.tankEmpty, en: +this.en, fault: this.fault, tm: this.tmI, td: this.tmD,
+             cd: Math.max(0, Math.round((this.cooldownUntil - this.simT) * 10) / 10), mn: CFG.SP_MIN, mx: CFG.SP_MAX };
+  }
+}
+
+/* =====================================================================
+   Machines (Bluetooth of simulatie)
+   ===================================================================== */
+const machines = [];
+let simCount = 0;
+
+function makeMachine(kind, name, key) {
+  const m = { kind, key, name: store.get('rm-name-' + key) || name, status: null, selected: true, hist: [],
+              rx: null, device: null, queue: Promise.resolve(), sim: null, buf: '' };
+  m.send = cmd => {
+    if (m.kind === 'sim') { m.sim && m.sim.command(cmd); return; }
+    if (!m.rx) return;
+    m.queue = m.queue.then(() => {
+      const d = enc.encode(cmd);
+      return m.rx.writeValueWithoutResponse ? m.rx.writeValueWithoutResponse(d) : m.rx.writeValue(d);
+    }).catch(e => console.warn('write', m.name, cmd, e));
+  };
+  m.onStatus = s => {
+    m.status = s;
+    m.hist.push({ t: s.t, sp: s.sp, h: s.heat, p: s.pump });
+    if (m.hist.length > 240) m.hist.shift();
+    renderCard(m); renderGroup();
+  };
+  machines.push(m);
+  buildCard(m);
+  renderGroup();
+  return m;
+}
+
+function removeMachine(m) {
+  if (m.kind === 'ble' && m.device && m.device.gatt.connected) { m.send('X'); m.device.gatt.disconnect(); }
+  const i = machines.indexOf(m); if (i >= 0) machines.splice(i, 1);
+  m.el.root.remove();
+  if (!machines.some(x => x.kind === 'sim')) { $('simSection').style.display = 'none'; }
+  renderGroup();
+}
+
+/* ---------- Bluetooth ---------- */
+async function addBle() {
+  try {
+    const device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'Rookmachine' }], optionalServices: [NUS_SERVICE] });
+    if (machines.some(x => x.device && x.device.id === device.id)) return;
+    const m = makeMachine('ble', device.name || 'Rookmachine', device.id);
+    m.device = device;
+    m.connecting = true; renderCard(m);
+    device.addEventListener('gattserverdisconnected', () => { m.rx = null; m.status = null; m.lost = true; renderCard(m); renderGroup(); });
+    await connectBle(m);
+  } catch (e) { console.warn(e); }
+}
+async function connectBle(m) {
+  try {
+    m.connecting = true; m.lost = false; renderCard(m);
+    const server = await m.device.gatt.connect();
+    const svc = await server.getPrimaryService(NUS_SERVICE);
+    m.rx = await svc.getCharacteristic(NUS_RX);
+    const tx = await svc.getCharacteristic(NUS_TX);
+    await tx.startNotifications();
+    tx.addEventListener('characteristicvaluechanged', e => {
+      m.buf += dec.decode(e.target.value);
+      if (m.buf.length > 2000) m.buf = m.buf.slice(-400);
+      const end = m.buf.lastIndexOf('}'); if (end < 0) return;
+      const chunk = m.buf.slice(m.buf.lastIndexOf('{', end), end + 1); m.buf = m.buf.slice(end + 1);
+      try { m.onStatus(JSON.parse(chunk)); } catch (err) {}
+    });
+  } catch (e) { console.warn(e); m.lost = true; }
+  m.connecting = false; renderCard(m); renderGroup();
+}
+
+/* ---------- simulatie ---------- */
+let simTimer = null;
+function addSim() {
+  simCount++;
+  const m = makeMachine('sim', 'Simulatie ' + simCount, 'sim' + simCount);
+  m.sim = new Sim();
+  $('simSection').style.display = 'block';
+  if (!simTimer) {
+    let last = performance.now(), lastStatus = 0;
+    simTimer = setInterval(() => {
+      const now = performance.now(), dt = (now - last) / 1000; last = now;
+      const speed = parseFloat($('simSpeed').value) || 1;
+      machines.forEach(x => { if (x.kind === 'sim') x.sim.advance(dt * speed); });
+      if (now - lastStatus > 250) { lastStatus = now; machines.forEach(x => { if (x.kind === 'sim') x.onStatus(x.sim.status()); }); }
+    }, 100);
+  }
+}
+const simSpeed = () => parseFloat($('simSpeed').value) || 1;
+
+/* =====================================================================
+   Kaarten per machine
+   ===================================================================== */
+const tick = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="square"/></svg>';
+
+function buildCard(m) {
+  const root = document.createElement('div');
+  root.className = 'card sel';
+  root.innerHTML = `
+    <div class="ctop">
+      <button class="chk" aria-label="Meedoen in groep">${tick}</button>
+      <div class="cname"><b></b><small></small></div>
+      <div class="ctemp"><span class="tv">--</span><small class="spv"></small></div>
+    </div>
+    <div class="cbar"><div></div></div>
+    <div class="cstate"></div>
+    <div class="csp">
+      <span class="csplbl">Setpunt</span>
+      <button class="spb spm" aria-label="Setpunt 5 graden lager">−</button>
+      <span class="spl">--</span>
+      <button class="spb spp" aria-label="Setpunt 5 graden hoger">+</button>
+    </div>
+    <details>
+      <summary>Details en instellingen</summary>
+      <div class="dbody">
+        <canvas></canvas>
+        <div class="note">Laatste metingen. Geel = temperatuur, stippellijn = setpunt, balk onder = pomp aan.</div>
+        <label>Naam</label><input type="text" class="nm" maxlength="24">
+        <div class="row">
+          <button class="btn heat">Verwarming uit</button>
+          <button class="btn reset">Fout resetten</button>
+        </div>
+        <div class="row simrow" style="display:none">
+          <button class="btn ghost tc">Thermokoppel los</button>
+          <button class="btn ghost el">Element defect</button>
+          <button class="btn ghost tk">Tank leeg</button>
+        </div>
+        <div class="row">
+          <button class="btn ghost recon" style="display:none">Opnieuw verbinden</button>
+          <button class="btn ghost rm">Verwijderen</button>
+        </div>
+      </div>
+    </details>`;
+  $('machines').appendChild(root);
+  const q = s => root.querySelector(s);
+  m.el = { root, chk: q('.chk'), name: q('.cname b'), kind: q('.cname small'), tv: q('.tv'), spv: q('.spv'), bar: q('.cbar div'),
+           state: q('.cstate'), canvas: q('canvas'), nm: q('.nm'), spl: q('.spl'), spm: q('.spm'), spp: q('.spp'), heat: q('.heat'), reset: q('.reset'),
+           simrow: q('.simrow'), tc: q('.tc'), elb: q('.el'), tk: q('.tk'), recon: q('.recon'), rm: q('.rm'), details: q('details') };
+  const e = m.el;
+  e.chk.onclick = () => { m.selected = !m.selected; root.classList.toggle('sel', m.selected); if (!m.selected) m.send('X'); renderGroup(); };
+  const stepSp = d => {
+    const s = m.status; if (!s) return;
+    const lo = s.mn || CFG.SP_MIN, hi = s.mx || CFG.SP_MAX;
+    const base = m.pendingSp != null ? m.pendingSp : s.sp;
+    const v = Math.min(hi, Math.max(lo, base + d));
+    m.pendingSp = v; e.spl.textContent = v + ' °C';
+    clearTimeout(m.spTimer);
+    m.spTimer = setTimeout(() => { m.send('SP:' + v); setTimeout(() => { m.pendingSp = null; }, 1500); }, 600);
+  };
+  e.spm.onclick = () => stepSp(-5);
+  e.spp.onclick = () => stepSp(5);
+  e.nm.value = m.name;
+  e.nm.onchange = () => { m.name = e.nm.value.trim() || m.name; store.set('rm-name-' + m.key, m.name); renderCard(m); };
+  e.heat.onclick = () => m.send(m.status && m.status.en ? 'H0' : 'H1');
+  e.reset.onclick = () => m.send('R');
+  e.rm.onclick = () => removeMachine(m);
+  e.recon.onclick = () => connectBle(m);
+  if (m.kind === 'sim') {
+    e.simrow.style.display = 'flex';
+    e.tc.onclick = () => { m.sim.tcLoose = !m.sim.tcLoose; e.tc.textContent = m.sim.tcLoose ? 'Thermokoppel terug' : 'Thermokoppel los'; };
+    e.elb.onclick = () => { m.sim.elDead = !m.sim.elDead; e.elb.textContent = m.sim.elDead ? 'Element maken' : 'Element defect'; };
+    e.tk.onclick = () => { m.sim.tankEmpty = !m.sim.tankEmpty; e.tk.textContent = m.sim.tankEmpty ? 'Tank vullen' : 'Tank leeg'; };
+  }
+  e.details.addEventListener('toggle', () => drawSpark(m));
+  renderCard(m);
+}
+
+function machineState(m) {
+  const s = m.status;
+  if (m.kind === 'ble' && (m.connecting)) return 'connecting';
+  if (m.kind === 'ble' && (m.lost || !m.rx)) return 'lost';
+  if (!s) return 'connecting';
+  if (s.fault) return 'fault';
+  if (!s.en) return 'standby';
+  if (!s.tank) return 'tank';
+  if (s.pump) return 'fog';
+  if (s.cd > 0) return 'pause';
+  if (s.ready) return 'ready';
+  return 'heat';
+}
+
+function pill(text, cls) { return `<span class="pill ${cls || ''}">${text}</span>`; }
+
+function renderCard(m) {
+  const e = m.el, s = m.status, st = machineState(m);
+  e.name.textContent = m.name;
+  e.kind.textContent = m.kind === 'sim' ? 'simulatie' : (m.device && m.device.name) || 'bluetooth';
+  e.tv.textContent = s && s.t >= 0 ? Math.round(s.t) + '°' : '--';
+  e.spv.textContent = s ? 'bloktemperatuur' : '';
+  const pct = s && s.t > 0 ? Math.min(100, s.t / s.sp * 100) : 0;
+  e.bar.style.width = pct + '%';
+  e.bar.style.background = s && s.ready ? 'var(--yellow)' : 'var(--white)';
+  let html = '';
+  if (st === 'connecting') html = pill('Verbinden…');
+  else if (st === 'lost') html = pill('Verbinding weg', 'bad');
+  else {
+    if (st === 'fault') html += pill('Fout: ' + s.fault, 'bad');
+    else if (st === 'standby') html += pill('Standby');
+    else if (st === 'tank') html += pill('Tank leeg', 'bad');
+    else if (st === 'fog') html += pill('Rookt', 'on');
+    else if (st === 'pause') html += pill('Pauze ' + Math.ceil(s.cd) + ' s', 'hot');
+    else if (st === 'ready') html += pill('Klaar', 'on');
+    else html += pill('Opwarmen', 'hot');
+    html += pill(s.heat ? 'Element aan' : 'Element uit', s.heat ? 'hot' : '');
+    if (s.tm > 0) html += pill(`Timer ${s.tm} s / ${s.td} s`, 'hot');
+  }
+  e.state.innerHTML = html;
+  e.heat.textContent = s && !s.en ? 'Verwarming aan' : 'Verwarming uit';
+  if (m.pendingSp == null) e.spl.textContent = s ? s.sp + ' °C' : '--';
+  e.spm.disabled = !s || (m.pendingSp ?? s.sp) <= (s.mn || CFG.SP_MIN);
+  e.spp.disabled = !s || (m.pendingSp ?? s.sp) >= (s.mx || CFG.SP_MAX);
+  e.recon.style.display = st === 'lost' ? 'block' : 'none';
+  if (e.details.open) drawSpark(m);
+}
+
+function drawSpark(m) {
+  const c = m.el.canvas; if (!m.el.details.open) return;
+  const dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = c.clientHeight; if (!W) return;
+  if (c.width !== W * dpr) { c.width = W * dpr; c.height = H * dpr; }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const h = m.hist; if (h.length < 2) return;
+  const n = 240, X = i => (i + (n - h.length)) / (n - 1) * W, Y = v => H - 8 - (v / 320) * (H - 14);
+  h.forEach((p, i) => { if (p.p) { g.fillStyle = '#FFBE03'; g.fillRect(X(i), H - 5, W / n + 1, 5); } });
+  g.strokeStyle = '#5E5E5E'; g.setLineDash([4, 4]); g.beginPath();
+  h.forEach((p, i) => i ? g.lineTo(X(i), Y(p.sp)) : g.moveTo(X(i), Y(p.sp))); g.stroke(); g.setLineDash([]);
+  g.strokeStyle = '#FFBE03'; g.lineWidth = 2; g.beginPath(); let pen = false;
+  h.forEach((p, i) => { if (p.t < 0) { pen = false; return; } pen ? g.lineTo(X(i), Y(p.t)) : g.moveTo(X(i), Y(p.t)); pen = true; });
+  g.stroke();
+}
+
+/* =====================================================================
+   Groep: rookknop en bediening voor alle aangevinkte machines
+   ===================================================================== */
+let fogTimer = null, burstTimeout = null;
+const selected = () => machines.filter(m => m.selected);
+const live = () => selected().filter(m => !['connecting', 'lost'].includes(machineState(m)));
+
+function renderGroup() {
+  const sel = selected(), lv = live(), n = lv.length;
+  $('emptyMsg').style.display = machines.length ? 'none' : 'block';
+  $('selInfo').textContent = machines.length ? `${sel.length} van ${machines.length} aangevinkt` : '';
+  const btn = $('fogBtn'), lbl = $('fogLbl'), hint = $('fogHint'), fill = $('fogFill');
+  const states = lv.map(machineState);
+  const cnt = k => states.filter(x => x === k).length;
+  const usable = cnt('ready') + cnt('fog');
+  let cls = 's-off', L = 'Geen machine', H = 'Koppel een machine of start een simulatie', F = 0;
+
+  if (machines.length && !sel.length) { L = 'Niets gekozen'; H = 'Vink minstens één machine aan'; }
+  else if (sel.length && !n) { L = 'Verbinden'; H = 'Even geduld…'; }
+  else if (n) {
+    if (cnt('fog') > 0) { cls = 's-fog'; L = 'Rookt'; H = n > 1 ? `${cnt('fog')} van ${n} machines` : 'Loslaten = stoppen'; }
+    else if (usable > 0) {
+      cls = 's-ready'; L = 'Rook';
+      H = usable === n ? 'Ingedrukt houden' : `${usable} van ${n} klaar · ingedrukt houden`;
+    }
+    else if (cnt('pause') > 0) {
+      cls = 's-pause'; L = 'Pauze';
+      const left = Math.max(...lv.filter(m => machineState(m) === 'pause').map(m => m.status.cd));
+      H = `Nog ${Math.ceil(left)} s na lange stoot`;
+    }
+    else if (cnt('heat') > 0) {
+      cls = 's-heat'; L = 'Opwarmen';
+      const heating = lv.filter(m => machineState(m) === 'heat');
+      const worst = heating.reduce((a, m) => (m.status.t / m.status.sp < a.status.t / a.status.sp ? m : a));
+      F = Math.max(0, Math.min(100, (worst.status.t - AMBIENT) / (worst.status.sp - CFG.READY_ON - AMBIENT) * 100));
+      H = `${Math.round(worst.status.t)}° van ${worst.status.sp - CFG.READY_ON}°` + (n > 1 ? ` · traagste machine` : '');
+    }
+    else if (cnt('fault') > 0) { cls = 's-fault'; L = 'Fout'; H = 'Bekijk de machine hieronder'; }
+    else if (cnt('tank') > 0) { cls = 's-fault'; L = 'Tank leeg'; H = 'Vul de vloeistof bij'; }
+    else if (cnt('standby') > 0) { cls = 's-off'; L = 'Standby'; H = 'Verwarming staat uit'; }
+  }
+  if (fogTimer && cls === 's-ready') { cls = 's-fog'; L = 'Rookt'; }
+  btn.className = 'fog ' + cls;
+  lbl.textContent = L; hint.textContent = H; fill.style.height = (cls === 's-heat' ? F : 0) + '%';
+  btn.disabled = !n;
+  for (const id of ['burst3', 'burst6', 'stopAll', 'tmStart', 'tmStop']) $(id).disabled = !n;
+}
+
+function sendSel(cmd) { live().forEach(m => m.send(cmd)); }
+function startFog() {
+  if (fogTimer || !live().length) return;
+  sendSel('F'); fogTimer = setInterval(() => sendSel('F'), 300);
+  if (navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
+  renderGroup();
+}
+function stopFog() {
+  if (burstTimeout) { clearTimeout(burstTimeout); burstTimeout = null; }
+  if (fogTimer) { clearInterval(fogTimer); fogTimer = null; sendSel('X'); }
+  renderGroup();
+}
+function burst(sec) {
+  stopFog(); startFog();
+  const allSim = live().every(m => m.kind === 'sim');
+  burstTimeout = setTimeout(stopFog, sec * 1000 / (allSim ? simSpeed() : 1));
+}
+
+const fb = $('fogBtn');
+fb.addEventListener('pointerdown', e => { e.preventDefault(); try { fb.setPointerCapture(e.pointerId); } catch (_) {} startFog(); });
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => fb.addEventListener(ev, () => { if (!burstTimeout) stopFog(); }));
+fb.addEventListener('contextmenu', e => e.preventDefault());
+
+$('burst3').onclick = () => burst(3);
+$('burst6').onclick = () => burst(6);
+$('stopAll').onclick = () => { stopFog(); machines.forEach(m => m.send('S')); };
+$('tmStart').onclick = () => {
+  const iv = Math.max(5, Math.min(3600, parseInt($('tmInt').value) || 60));
+  const du = Math.max(1, Math.min(20, parseInt($('tmDur').value) || 5));
+  sendSel(`TM:${iv},${du}`);
+};
+$('tmStop').onclick = () => sendSel('TM:0');
+
+$('addBle').onclick = addBle;
+$('addSim').onclick = addSim;
+
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopFog(); });
+setInterval(renderGroup, 500);
+
+if (!('bluetooth' in navigator)) { $('unsupported').style.display = 'block'; $('addBle').disabled = true; }
+renderGroup();
+
+/* Offline werken: app-bestanden in de telefoon bewaren (alleen op een echte website). */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>
