@@ -1,0 +1,11 @@
+{
+  "name": "Rookmachine",
+  "version": "1.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [ { "path": "rookmachine_esp32.merged.bin", "offset": 0 } ]
+    }
+  ]
+}

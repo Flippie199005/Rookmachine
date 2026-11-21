@@ -37,6 +37,10 @@ Safari kan geen Bluetooth gebruiken vanuit een website. Gebruik daarom de gratis
 
 ## Firmware op de ESP32 zetten
 
+**Makkelijkste manier (zonder Arduino-programma):** open `https://<jouw-gebruikersnaam>.github.io/rookmachine/installeren.html` in Chrome of Edge op een pc of laptop, sluit de ESP32 met USB aan en klik op **Installeren op ESP32**. De kant-en-klare firmware staat in `firmware/rookmachine_esp32.merged.bin` (gebouwd met ESP32 Arduino core 3.3.13, partition scheme Huge APP).
+
+**Zelf compileren (als je de code aanpast):**
+
 1. Installeer de Arduino IDE 2 en via de Boards Manager **esp32 by Espressif Systems**.
 2. Installeer via Library Manager **MAX6675 library** (Adafruit).
 3. Open `firmware/rookmachine_esp32.ino`, kies board **ESP32 Dev Module**, partition scheme **Huge APP (3MB No OTA)**, en upload.

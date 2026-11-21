@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#000000">
+<title>ESP32 installeren · Rookmachines</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<style>
+  @font-face { font-family: "Bebas Neue"; src: url("fonts/bebas-neue-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Oswald"; src: url("fonts/oswald-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+  :root { --yellow: #FFBE03; --line: #2B2B2B; --muted: #9B9B9B;
+          --head: "Bebas Neue", Impact, "Arial Narrow", sans-serif; --body: "Oswald", "Arial Narrow", Arial, sans-serif; }
+  html, body { margin: 0; background: #000; color: #fff; font-family: var(--body); }
+  body { max-width: 620px; margin: 0 auto; padding: 0 20px 40px; line-height: 1.55; }
+  .stripes { height: 48px; margin: 0 -20px; background: repeating-linear-gradient(to bottom, var(--yellow) 0 8px, #000 8px 16px); }
+  h1 { font-family: var(--head); font-weight: 400; font-size: 2.6rem; line-height: .95; margin: 28px 0 6px; }
+  h1 span { color: var(--yellow); }
+  h2 { font-family: var(--head); font-weight: 400; font-size: 1.5rem; margin: 28px 0 8px; letter-spacing: .02em; }
+  p, li { color: #ddd; }
+  ol { padding-left: 1.2em; }
+  li { margin: 6px 0; }
+  b { color: #fff; font-weight: 400; }
+  .box { border: 1.5px solid var(--yellow); padding: 16px; margin: 22px 0; }
+  .warn { border-color: var(--line); color: var(--muted); font-size: .92rem; }
+  esp-web-install-button { --esp-tools-button-color: #FFBE03; --esp-tools-button-text-color: #000; --esp-tools-button-border-radius: 0; }
+  .btn { display: inline-block; background: var(--yellow); color: #000; font-family: var(--head); font-size: 1.4rem; letter-spacing: .04em;
+         padding: 10px 18px; border: 0; cursor: pointer; text-decoration: none; }
+  .nosupport { color: var(--yellow); }
+  a { color: var(--yellow); }
+  code { background: #111; padding: 1px 5px; }
+</style>
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+</head>
+<body>
+<div class="stripes" aria-hidden="true"></div>
+<h1>ESP32 <span>installeren</span></h1>
+<p>Zet de rookmachine-software op een ESP32, rechtstreeks vanuit je browser. Geen Arduino-programma nodig.</p>
+
+<div class="box">
+  <esp-web-install-button manifest="firmware/manifest.json">
+    <button slot="activate" class="btn">Installeren op ESP32</button>
+    <span slot="unsupported" class="nosupport">Deze browser kan niet met USB-apparaten praten. Gebruik <b>Chrome</b> of <b>Edge</b> op een pc of laptop.</span>
+    <span slot="not-allowed" class="nosupport">Open deze pagina via https (de GitHub-link), niet als los bestand.</span>
+  </esp-web-install-button>
+</div>
+
+<h2>Zo werkt het</h2>
+<ol>
+  <li>Sluit eerst de <b>antenne</b> aan op de ESP32.</li>
+  <li>Verbind de ESP32 met een <b>USB-datakabel</b> met je pc of laptop.</li>
+  <li>Klik op <b>Installeren op ESP32</b> en kies de poort van de ESP32 (vaak <i>CP210x</i> of <i>USB Serial</i>).</li>
+  <li>Bij een <b>nieuwe</b> ESP32: kies <b>Wissen</b> (erase). Bij een <b>update</b> van een machine die al werkt: niet wissen, dan blijft het opgeslagen setpunt bewaard.</li>
+  <li>Wacht tot het klaar is (ongeveer een minuut). De ESP32 start daarna vanzelf op.</li>
+  <li>Klik eventueel op <b>Logs &amp; Console</b>: je ziet dan de Bluetooth-naam (<code>Rookmachine-XXXX</code>) en de temperatuur.</li>
+</ol>
+
+<div class="box warn">
+  <b>Geen poort te zien?</b> Installeer op Windows de USB-driver van de chip op je board (meestal <i>CP210x</i> van Silicon Labs of <i>CH340</i>) en probeer opnieuw. Blijft het hangen op "verbinden", houd dan het <b>BOOT</b>-knopje op de ESP32 ingedrukt tot het installeren begint.<br><br>
+  Dit werkt niet op een telefoon: daarvoor heb je een pc of laptop met Chrome of Edge nodig.
+</div>
+
+<p><a href="./">← Terug naar de bediening</a></p>
+</body>
+</html>
