@@ -1,6 +1,6 @@
 // Service worker: bewaart de app in de telefoon zodat hij ook zonder internet opent.
 // Verhoog VERSION bij elke nieuwe versie van de app, dan halen telefoons de nieuwe bestanden op.
-const VERSION = 'rookmachines-v1.1';
+const VERSION = 'rookmachines-v1.2';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'fonts/bebas-neue-400.woff2', 'fonts/oswald-400.woff2', 'fonts/oswald-500.woff2',

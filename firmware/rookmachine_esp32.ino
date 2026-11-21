@@ -245,6 +245,10 @@ void setup() {
   pinMode(PIN_LED_READY, OUTPUT);
   pinMode(PIN_LED_HEAT, OUTPUT);
   pinMode(PIN_LEVEL, INPUT_PULLUP);
+  // Pull-up op de datalijn van de MAX6675: ontbreekt de module of zit een draad los,
+  // dan leest de ESP32 allemaal enen. Dat geeft direct "thermokoppel los" in plaats van
+  // een schijnbaar koude 0 graden (waarbij de verwarming onterecht aan zou gaan).
+  pinMode(PIN_TC_SO, INPUT_PULLUP);
   allOff();                                  // eerst alles veilig uit
   prefs.begin("rook", false);                // eigen setpunt van deze machine ophalen
   setpoint = constrain(prefs.getFloat("sp", setpoint), SP_MIN, SP_MAX);

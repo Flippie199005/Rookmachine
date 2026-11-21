@@ -222,7 +222,7 @@
   <div class="note">Model op basis van de metingen aan de FX 1700: opwarmen ca. 30 °C per minuut, ca. 7 °C doorschieten, roken koelt het blok af. Zelfde regels als de ESP32-code.</div>
 </section>
 
-<footer>Rookmachine-bediening · ESP32 via Bluetooth LE · versie 1.1 · <a href="installeren.html" style="color:var(--yellow)">ESP32 installeren</a></footer>
+<footer>Rookmachine-bediening · ESP32 via Bluetooth LE · versie 1.2 · <a href="installeren.html" style="color:var(--yellow)">ESP32 installeren</a></footer>
 
 <script>
 /* =====================================================================
@@ -347,6 +347,8 @@ function makeMachine(kind, name, key) {
 }
 
 function removeMachine(m) {
+  m.removed = true;
+  if (m.retryTimer) { clearTimeout(m.retryTimer); m.retryTimer = null; }
   if (m.kind === 'ble' && m.device && m.device.gatt.connected) { m.send('X'); m.device.gatt.disconnect(); }
   const i = machines.indexOf(m); if (i >= 0) machines.splice(i, 1);
   m.el.root.remove();
@@ -362,11 +364,26 @@ async function addBle() {
     const m = makeMachine('ble', device.name || 'Rookmachine', device.id);
     m.device = device;
     m.connecting = true; renderCard(m);
-    device.addEventListener('gattserverdisconnected', () => { m.rx = null; m.status = null; m.lost = true; renderCard(m); renderGroup(); });
+    device.addEventListener('gattserverdisconnected', () => {
+      m.rx = null; m.status = null; m.lost = true; renderCard(m); renderGroup();
+      scheduleReconnect(m);
+    });
     await connectBle(m);
   } catch (e) { console.warn(e); }
 }
+/* Automatisch opnieuw verbinden: wacht 1, 2, 4, 8 en daarna steeds 10 s tussen pogingen. */
+function scheduleReconnect(m) {
+  if (m.removed || m.retryTimer) return;
+  const wait = Math.min(10000, 1000 * Math.pow(2, m.retries || 0));
+  m.retries = (m.retries || 0) + 1;
+  m.retryIn = Math.round(wait / 1000);
+  m.retryTimer = setTimeout(() => { m.retryTimer = null; if (!m.removed && !(m.device && m.device.gatt.connected)) connectBle(m); }, wait);
+  renderCard(m);
+}
+
 async function connectBle(m) {
+  if (m.removed) return;
+  if (m.retryTimer) { clearTimeout(m.retryTimer); m.retryTimer = null; }
   try {
     m.connecting = true; m.lost = false; renderCard(m);
     const server = await m.device.gatt.connect();
@@ -381,7 +398,14 @@ async function connectBle(m) {
       const chunk = m.buf.slice(m.buf.lastIndexOf('{', end), end + 1); m.buf = m.buf.slice(end + 1);
       try { m.onStatus(JSON.parse(chunk)); } catch (err) {}
     });
-  } catch (e) { console.warn(e); m.lost = true; }
+    m.retries = 0; m.retryIn = 0;
+  } catch (e) {
+    console.warn(e); m.lost = true; m.rx = null;
+    try { if (m.device.gatt.connected) m.device.gatt.disconnect(); } catch (_) {}
+    m.connecting = false; renderCard(m); renderGroup();
+    scheduleReconnect(m);
+    return;
+  }
   m.connecting = false; renderCard(m); renderGroup();
 }
 
@@ -470,7 +494,7 @@ function buildCard(m) {
   e.heat.onclick = () => m.send(m.status && m.status.en ? 'H0' : 'H1');
   e.reset.onclick = () => m.send('R');
   e.rm.onclick = () => removeMachine(m);
-  e.recon.onclick = () => connectBle(m);
+  e.recon.onclick = () => { m.retries = 0; connectBle(m); };
   if (m.kind === 'sim') {
     e.simrow.style.display = 'flex';
     e.tc.onclick = () => { m.sim.tcLoose = !m.sim.tcLoose; e.tc.textContent = m.sim.tcLoose ? 'Thermokoppel terug' : 'Thermokoppel los'; };
@@ -507,8 +531,8 @@ function renderCard(m) {
   e.bar.style.width = pct + '%';
   e.bar.style.background = s && s.ready ? 'var(--yellow)' : 'var(--white)';
   let html = '';
-  if (st === 'connecting') html = pill('Verbinden…');
-  else if (st === 'lost') html = pill('Verbinding weg', 'bad');
+  if (st === 'connecting') html = pill(m.retries ? `Opnieuw verbinden… (poging ${m.retries})` : 'Verbinden…', 'hot');
+  else if (st === 'lost') html = m.retryTimer ? pill(`Opnieuw verbinden over ${m.retryIn} s`, 'hot') : pill('Verbinding weg', 'bad');
   else {
     if (st === 'fault') html += pill('Fout: ' + s.fault, 'bad');
     else if (st === 'standby') html += pill('Standby');
