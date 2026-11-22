@@ -39,17 +39,25 @@ Preferences prefs;
 
 // ======================= INSTELLINGEN =======================
 // Pinnen
-const int PIN_SSR       = 27;   // via NPN-transistor naar SSR-ingang
-const int PIN_PUMP      = 26;   // relaismodule IN
-const int PIN_LEVEL     = 33;   // vlotter (andere kant naar GND)
-const int PIN_LED_READY = 25;   // groene led voorkant
-const int PIN_LED_HEAT  = 32;   // optionele heating-led
-const int PIN_TC_SCK    = 18;
-const int PIN_TC_CS     = 5;
-const int PIN_TC_SO     = 19;
+const int PIN_SSR       = 4;   // via BC547 naar SSR-ingang (min)  [print v3]
+const int PIN_PUMP      = 2;   // relaismodule IN via JP1 (Q2 of direct)  [print v3]
+const int PIN_LEVEL     = 16;  // tank-reedcontact (andere kant naar GND)  [print v3]
+const int PIN_LED_READY = 17;  // groene led behuizing (J4)  [print v3]
+const int PIN_LED_HEAT  = 33;  // gele led op de print: opwarmen  [print v3]
+const int PIN_LED_STAT  = 32;  // rode led op de print: storing = aan, wacht op verbinding = knipperen  [print v3]
+const int PIN_TC_SCK    = 5;   // MAX6675 CLK  [print v3]
+const int PIN_TC_CS     = 18;  // MAX6675 CS  [print v3]
+const int PIN_TC_SO     = 19;  // MAX6675 SO/DO
+const int PIN_BUTTON    = 13;  // drukknop rook op de behuizing (andere kant naar GND)  [print v5.1]
+// Optionele LoRa-module EBYTE E220-900T22D (868 MHz) op header J10  [print v5.1]
+const int PIN_LORA_M0   = 25;  // M0 + M1 laag = normale (transparante) modus
+const int PIN_LORA_M1   = 26;
+const int PIN_LORA_TX   = 27;  // ESP32 TX -> RXD van de module
+const int PIN_LORA_RX   = 14;  // ESP32 RX <- TXD van de module (via 1k)
+const uint32_t LORA_BAUD = 9600; // fabrieksinstelling E220
 
 // Hardware-gedrag (aanpassen na meten)
-const bool PUMP_ACTIVE_LOW        = false;  // relaismodule met jumper op H (high-actief)
+const bool PUMP_ACTIVE_LOW        = false;  // print v3: altijd false (JP1 regelt high/low-trigger)
 const bool SSR_ACTIVE_HIGH        = true;   // met NPN-transistor: HIGH = aan
 const bool TANK_OK_WHEN_CLOSED    = false;  // gemeten: volle tank = open, dus gesloten = LEEG
 const bool USE_LEVEL_SENSOR       = true;   // reed-contact werkt (0,4 Ohm met magneet)
@@ -244,7 +252,9 @@ void setup() {
   pinMode(PIN_SSR, OUTPUT);
   pinMode(PIN_LED_READY, OUTPUT);
   pinMode(PIN_LED_HEAT, OUTPUT);
+  pinMode(PIN_LED_STAT, OUTPUT);
   pinMode(PIN_LEVEL, INPUT_PULLUP);
+  pinMode(PIN_BUTTON, INPUT_PULLUP);
   // Pull-up op de datalijn van de MAX6675: ontbreekt de module of zit een draad los,
   // dan leest de ESP32 allemaal enen. Dat geeft direct "thermokoppel los" in plaats van
   // een schijnbaar koude 0 graden (waarbij de verwarming onterecht aan zou gaan).
@@ -255,6 +265,12 @@ void setup() {
   Serial.printf("Setpunt uit geheugen: %.0f C (max %.0f C)\n", setpoint, SP_MAX);
   delay(500);                                // MAX6675 opstarttijd
   setupBLE();
+  // LoRa: zelfde commando's als via Bluetooth (F, X, S, SP:..., enz.), 1 per regel.
+  // Zonder module gebeurt er niets: dan komt er gewoon nooit iets binnen.
+  pinMode(PIN_LORA_M0, OUTPUT); digitalWrite(PIN_LORA_M0, LOW);
+  pinMode(PIN_LORA_M1, OUTPUT); digitalWrite(PIN_LORA_M1, LOW);
+  Serial2.begin(LORA_BAUD, SERIAL_8N1, PIN_LORA_RX, PIN_LORA_TX);
+  gpio_pullup_en((gpio_num_t)PIN_LORA_RX);   // zonder module geen ruis op de RX-lijn
   Serial.println("Rookmachine gestart");
 }
 
@@ -267,6 +283,19 @@ void loop() {
   cmd = pendingCmd; pendingCmd = "";
   portEXIT_CRITICAL(&cmdMux);
   handleCommand(cmd);
+
+  // Commando's via LoRa (regel voor regel)
+  static String loraBuf;
+  while (Serial2.available()) {
+    char ch = (char)Serial2.read();
+    if (ch == '\n' || ch == '\r') {
+      loraBuf.trim();
+      if (loraBuf.length()) handleCommand(loraBuf);
+      loraBuf = "";
+    } else if (loraBuf.length() < 32) {
+      loraBuf += ch;
+    }
+  }
 
   // Temperatuur lezen (MAX6675 max ~4x per seconde)
   static uint32_t lastRead = 0;
@@ -302,6 +331,18 @@ void loop() {
     if (!ready && tempC >= setpoint - READY_ON_MARGIN)  ready = true;
     if (ready  && tempC <  setpoint - READY_OFF_MARGIN) ready = false;
     if (!heaterEnabled) ready = false;
+
+    // --- drukknop op de behuizing: rook zolang ingedrukt (zelfde veiligheden als de app) ---
+    static bool btnStable = false, btnLast = false;
+    static uint32_t btnSince = 0;
+    bool btnRaw = digitalRead(PIN_BUTTON) == LOW;
+    if (btnRaw != btnLast) { btnLast = btnRaw; btnSince = now; }
+    if (now - btnSince > 40) btnStable = btnRaw;          // 40 ms ontdendering
+    if (btnStable) {
+      if (!fogRequested) fogStart = now;
+      fogRequested = true;
+      lastFogCmd = now;
+    }
 
     // --- handmatige rook: keepalive verlopen? ---
     if (fogRequested && now - lastFogCmd > FOG_KEEPALIVE_MS) fogRequested = false;
@@ -345,6 +386,10 @@ void loop() {
   else if (heaterEnabled)      digitalWrite(PIN_LED_READY, blinkSlow);
   else                         digitalWrite(PIN_LED_READY, LOW);
   digitalWrite(PIN_LED_HEAT, heaterOn);
+  // rode led: storing of lege tank = continu aan, geen app verbonden = knipperen, verbonden en ok = uit
+  if (fault.length() || !tankOk) digitalWrite(PIN_LED_STAT, HIGH);
+  else if (!bleConnected)        digitalWrite(PIN_LED_STAT, (now % 1000) < 150);
+  else                           digitalWrite(PIN_LED_STAT, LOW);
 
   // --- status ---
   static uint32_t lastStatus = 0;
