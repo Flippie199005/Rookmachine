@@ -48,6 +48,20 @@ Safari kan geen Bluetooth gebruiken vanuit een website. Gebruik daarom de gratis
 
 Per machine kun je bovenaan de code de grenzen aanpassen, zoals `SP_MAX` (hoogste setpunt). Het setpunt zelf stel je in de app in en wordt in de ESP32 bewaard.
 
+## Pinbezetting (firmware v1.3, print v5.6)
+
+| Functie | GPIO | Op de print |
+|---|---|---|
+| SSR verwarming (via Q1) | 4 | J6 |
+| Pomp-relais (via JP1: direct of via Q2) | 2 | J5 (S + −) |
+| Tanksensor | 16 | J3 (JST XH) |
+| Groene led "klaar" | 17 | J4 (JST XH) |
+| Gele led "opwarmen" | 33 | D3 |
+| Rode led "storing" | 32 | D1 |
+| Drukknop rook | 13 | J9 |
+| MAX6675 CLK / CS / SO | 5 / 18 / 19 | J2 |
+| LoRa E220 M0 / M1 / RXD / TXD | 25 / 26 / 27 / 14 | J10 (optioneel) |
+
 ## Veiligheid
 
 - De thermische beveiliging (klixon KSD301) blijft altijd in serie met het verwarmingselement.
